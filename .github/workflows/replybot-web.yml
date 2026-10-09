@@ -1,0 +1,95 @@
+name: ReplyBot Web Image
+
+run-name: ReplyBot Web Image · ${{ inputs.ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: ReplyBot branch, tag, or commit SHA
+        required: true
+        type: string
+        default: main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: replybot-web-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out builder
+        uses: actions/checkout@v7
+
+      - name: Check out private ReplyBot source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.REPLYBOT_REPOSITORY }}
+          ref: ${{ inputs.ref }}
+          ssh-key: ${{ secrets.REPLYBOT_DEPLOY_KEY }}
+          path: replybot
+          lfs: false
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.25.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: replybot/pnpm-lock.yaml
+
+      - name: Verify ReplyBot web source
+        working-directory: replybot
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm typecheck
+          pnpm web:build
+
+      - name: Resolve source revision
+        id: source
+        working-directory: replybot
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish production image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./replybot
+          file: ./replybot/apps/web/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/sengmitnick/replybot-web:production
+            ghcr.io/sengmitnick/replybot-web:sha-${{ steps.source.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/sengmitnick/sengclaw-builder
+            org.opencontainers.image.revision=${{ steps.source.outputs.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true

@@ -37,7 +37,7 @@ jobs:
         with:
           repository: ${{ vars.REPLYBOT_REPOSITORY }}
           ref: ${{ inputs.ref }}
-          token: ${{ secrets.REPLYBOT_REPO_TOKEN }}
+          ssh-key: ${{ secrets.REPLYBOT_DEPLOY_KEY }}
           path: replybot
           lfs: true
           fetch-depth: 1
@@ -101,4 +101,3 @@ jobs:
         run: |
           export PATH="$(brew --prefix postgresql@16)/bin:$PATH"
           pg_ctl -D "$RUNNER_TEMP/replybot-postgres" stop || true
-

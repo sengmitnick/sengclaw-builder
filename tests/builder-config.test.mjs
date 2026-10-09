@@ -48,7 +48,7 @@ test("macOS verifier checks identity, architecture, trust, notarization, and che
   assert.match(source, /shasum -a 256/);
 });
 
-test("workflow is manual, isolated, and checks out private ReplyBot with LFS", () => {
+test("macOS workflow is manual, isolated, and checks out private ReplyBot with LFS", () => {
   const source = read(".github/workflows/replybot-macos.yml");
 
   assert.match(source, /workflow_dispatch:/);
@@ -58,7 +58,7 @@ test("workflow is manual, isolated, and checks out private ReplyBot with LFS", (
   assert.match(source, /runs-on: macos-15/);
   assert.match(source, /environment: macos-release/);
   assert.match(source, /repository: \$\{\{ vars\.REPLYBOT_REPOSITORY \}\}/);
-  assert.match(source, /token: \$\{\{ secrets\.REPLYBOT_REPO_TOKEN \}\}/);
+  assert.match(source, /ssh-key: \$\{\{ secrets\.REPLYBOT_DEPLOY_KEY \}\}/);
   assert.match(source, /lfs: true/);
   assert.match(source, /path: replybot/);
   assert.match(source, /postgresql@16/);

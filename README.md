@@ -30,7 +30,7 @@
 
 | Secret | 用途 |
 | --- | --- |
-| `REPLYBOT_REPO_TOKEN` | 只读拉取私有 ReplyBot 源码和 LFS 对象 |
+| `REPLYBOT_DEPLOY_KEY` | 只读拉取私有 ReplyBot 源码和 LFS 对象的专用 Deploy Key |
 | `BUILD_CERTIFICATE_BASE64` | Developer ID Application P12 |
 | `P12_PASSWORD` | P12 导出密码 |
 | `KEYCHAIN_PASSWORD` | 临时 CI 钥匙串密码 |
@@ -42,6 +42,17 @@
 | `PRODUCTION_LICENSE_PUBLIC_KEY_SHA256` | 官网显示的 `sha256:<hex>` 指纹 |
 
 Production License 公钥的两个 Secrets 等官网部署并初始化后再配置；其余值可提前准备。
+
+`REPLYBOT_DEPLOY_KEY` 是 Builder 仓库级 Secret，同时供官网镜像和 macOS 构建使用；对应公钥只以只读 Deploy Key 的形式安装在私有 ReplyBot 仓库。
+
+## 官网生产镜像
+
+`ReplyBot Web Image` 手动工作流从私有 ReplyBot 仓库读取指定 ref，完成测试、类型检查和 Web 构建后发布私有 Linux AMD64 镜像：
+
+- `ghcr.io/sengmitnick/replybot-web:production`：Dokploy 使用的滚动生产标签。
+- `ghcr.io/sengmitnick/replybot-web:sha-<commit>`：用于审计和回滚的不可变标签。
+
+Dokploy 通过已有 GHCR Registry 拉取镜像。数据库 URL、管理员密码与 License 私钥均为运行时数据，不进入镜像。
 
 ## 本地校验
 
@@ -65,4 +76,3 @@ gh workflow run replybot-macos.yml \
 ```
 
 工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。
-
