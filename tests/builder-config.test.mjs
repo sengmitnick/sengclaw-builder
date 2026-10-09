@@ -62,6 +62,7 @@ test("macOS workflow is manual, isolated, and checks out private ReplyBot with L
   assert.match(source, /lfs: true/);
   assert.match(source, /path: replybot/);
   assert.match(source, /postgresql@16/);
+  assert.match(source, /version: 11\.28\.4/);
   assert.match(source, /scripts\/build-replybot-macos\.sh/);
   assert.match(source, /actions\/upload-artifact@v6/);
 });

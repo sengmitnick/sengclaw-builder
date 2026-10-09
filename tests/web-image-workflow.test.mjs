@@ -26,6 +26,7 @@ test("web image workflow is manual, least-privilege, verified, and immutable", (
   assert.match(source, /pnpm test/);
   assert.match(source, /pnpm typecheck/);
   assert.match(source, /pnpm web:build/);
+  assert.match(source, /version: 11\.28\.4/);
   assert.match(source, /docker\/setup-buildx-action@v4/);
   assert.match(source, /docker\/login-action@v4/);
   assert.match(source, /docker\/build-push-action@v7/);
