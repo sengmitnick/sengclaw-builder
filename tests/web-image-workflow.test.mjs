@@ -37,4 +37,7 @@ test("web image workflow is manual, least-privilege, verified, and immutable", (
   assert.match(source, /ghcr\.io\/sengmitnick\/replybot-web:production/);
   assert.match(source, /ghcr\.io\/sengmitnick\/replybot-web:sha-\$\{\{ steps\.source\.outputs\.short_sha \}\}/);
   assert.match(source, /provenance: mode=max/);
+  assert.match(source, /secrets\.DOKPLOY_DEPLOY_WEBHOOK/);
+  assert.match(source, /curl --fail-with-body --silent --show-error/);
+  assert.match(source, /ReplyBot source revision: \$\{\{ steps\.source\.outputs\.sha \}\}/);
 });

@@ -109,3 +109,13 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: mode=max
           sbom: true
+
+      - name: Trigger Dokploy production deployment
+        env:
+          DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
+        run: |
+          test -n "$DOKPLOY_DEPLOY_WEBHOOK"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            "$DOKPLOY_DEPLOY_WEBHOOK"
+          echo "ReplyBot source revision: ${{ steps.source.outputs.sha }}"

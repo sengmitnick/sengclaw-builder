@@ -31,6 +31,7 @@
 | Secret | 用途 |
 | --- | --- |
 | `REPLYBOT_DEPLOY_KEY` | 只读拉取私有 ReplyBot 源码和 LFS 对象的专用 Deploy Key |
+| `DOKPLOY_DEPLOY_WEBHOOK` | ReplyBot Web 镜像发布成功后触发 Dokploy 生产部署的应用 Webhook |
 | `BUILD_CERTIFICATE_BASE64` | Developer ID Application P12 |
 | `P12_PASSWORD` | P12 导出密码 |
 | `KEYCHAIN_PASSWORD` | 临时 CI 钥匙串密码 |
@@ -52,7 +53,7 @@ Production License 公钥的两个 Secrets 等官网部署并初始化后再配�
 - `ghcr.io/sengmitnick/replybot-web:production`：Dokploy 使用的滚动生产标签。
 - `ghcr.io/sengmitnick/replybot-web:sha-<commit>`：用于审计和回滚的不可变标签。
 
-Dokploy 通过已有 GHCR Registry 拉取镜像。数据库 URL、管理员密码与 License 私钥均为运行时数据，不进入镜像。
+Dokploy 通过已有 GHCR Registry 拉取镜像。数据库 URL、管理员密码与 License 私钥均为运行时数据，不进入镜像。镜像发布成功后，工作流使用 `DOKPLOY_DEPLOY_WEBHOOK` 触发 Dokploy 部署；未配置该 Secret 时工作流会失败关闭，不会把“只推镜像、未部署”误报为成功。
 
 ## 本地校验
 
