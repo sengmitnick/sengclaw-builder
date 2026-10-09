@@ -47,3 +47,21 @@ test("macOS verifier checks identity, architecture, trust, notarization, and che
   assert.match(source, /stapler validate/);
   assert.match(source, /shasum -a 256/);
 });
+
+test("workflow is manual, isolated, and checks out private ReplyBot with LFS", () => {
+  const source = read(".github/workflows/replybot-macos.yml");
+
+  assert.match(source, /workflow_dispatch:/);
+  assert.doesNotMatch(source, /pull_request:/);
+  assert.doesNotMatch(source, /^\s+push:/m);
+  assert.match(source, /contents: read/);
+  assert.match(source, /runs-on: macos-15/);
+  assert.match(source, /environment: macos-release/);
+  assert.match(source, /repository: \$\{\{ vars\.REPLYBOT_REPOSITORY \}\}/);
+  assert.match(source, /token: \$\{\{ secrets\.REPLYBOT_REPO_TOKEN \}\}/);
+  assert.match(source, /lfs: true/);
+  assert.match(source, /path: replybot/);
+  assert.match(source, /postgresql@16/);
+  assert.match(source, /scripts\/build-replybot-macos\.sh/);
+  assert.match(source, /actions\/upload-artifact@v6/);
+});
