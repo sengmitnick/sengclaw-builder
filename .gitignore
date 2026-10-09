@@ -1,0 +1,10 @@
+.DS_Store
+assets/
+replybot/
+*.log
+*.p12
+AuthKey_*.p8
+*.keychain-db
+*.pem
+!docs/**/*.pem
+
