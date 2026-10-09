@@ -20,6 +20,9 @@ test("web image workflow is manual, least-privilege, verified, and immutable", (
   assert.match(source, /packages: write/);
   assert.match(source, /runs-on: ubuntu-24\.04/);
   assert.match(source, /platforms: linux\/amd64/);
+  assert.match(source, /services:/);
+  assert.match(source, /image: postgres:16-alpine/);
+  assert.match(source, /REPLYBOT_TEST_DATABASE_URL: postgresql:\/\/replybot:ci-only@127\.0\.0\.1:5432\/replybot_test/);
   assert.match(source, /repository: \$\{\{ vars\.REPLYBOT_REPOSITORY \}\}/);
   assert.match(source, /ssh-key: \$\{\{ secrets\.REPLYBOT_DEPLOY_KEY \}\}/);
   assert.match(source, /lfs: false/);

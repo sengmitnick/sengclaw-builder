@@ -23,6 +23,22 @@ jobs:
   publish-image:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      REPLYBOT_TEST_DATABASE_URL: postgresql://replybot:ci-only@127.0.0.1:5432/replybot_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: replybot_test
+          POSTGRES_USER: replybot
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U replybot -d replybot_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
 
     steps:
       - name: Check out builder
