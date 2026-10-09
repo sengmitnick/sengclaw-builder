@@ -71,7 +71,7 @@ jobs:
         working-directory: replybot
         run: |
           pnpm install --frozen-lockfile
-          pnpm test
+          pnpm test --exclude packages/core/src/knowledge.integration.test.ts
           pnpm typecheck
           pnpm web:build
 

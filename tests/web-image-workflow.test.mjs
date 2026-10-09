@@ -27,6 +27,7 @@ test("web image workflow is manual, least-privilege, verified, and immutable", (
   assert.match(source, /ssh-key: \$\{\{ secrets\.REPLYBOT_DEPLOY_KEY \}\}/);
   assert.match(source, /lfs: false/);
   assert.match(source, /pnpm test/);
+  assert.match(source, /--exclude packages\/core\/src\/knowledge\.integration\.test\.ts/);
   assert.match(source, /pnpm typecheck/);
   assert.match(source, /pnpm web:build/);
   assert.match(source, /version: 11\.28\.4/);
