@@ -35,7 +35,7 @@
 | `BUILD_CERTIFICATE_BASE64` | Developer ID Application P12 |
 | `P12_PASSWORD` | P12 导出密码 |
 | `KEYCHAIN_PASSWORD` | 临时 CI 钥匙串密码 |
-| `APPLE_SIGNING_IDENTITY` | 完整 Developer ID Application identity |
+| `APPLE_SIGNING_IDENTITY` | Developer ID Application 匹配串；临时钥匙串只导入一张证书时可用 `Developer ID Application` |
 | `APPLE_API_KEY_BASE64` | App Store Connect Team API Key P8 |
 | `APPLE_API_KEY_ID` | Team API Key ID |
 | `APPLE_API_ISSUER` | App Store Connect Issuer ID |
@@ -76,4 +76,4 @@ gh workflow run replybot-macos.yml \
   -f ref=main
 ```
 
-工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。
+工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会检查 external 运行时依赖、解包后的 arm64 原生模块，并实际启动应用进行 10 秒主进程烟测；出现 `Cannot find module` 或未捕获 JavaScript 异常时构建失败。

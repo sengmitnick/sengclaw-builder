@@ -84,6 +84,5 @@ artifact_path="${assets_dir}/ReplyBot-${release_version}-arm64.dmg"
 cp "$source_dmg" "$artifact_path"
 popd >/dev/null
 
-"${script_dir}/verify-replybot-macos.sh" "$artifact_path"
+REPLYBOT_SOURCE_DIR="$app_dir" "${script_dir}/verify-replybot-macos.sh" "$artifact_path"
 printf 'ReplyBot release artifact: %s\n' "$artifact_path"
-

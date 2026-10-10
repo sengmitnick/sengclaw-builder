@@ -35,7 +35,7 @@ test("macOS build script validates every release input and builds arm64", () => 
   assert.match(source, /make --arch=arm64/);
 });
 
-test("macOS verifier checks identity, architecture, trust, notarization, and checksum", () => {
+test("macOS verifier checks identity, runtime dependencies, startup, notarization, and checksum", () => {
   const source = read("scripts/verify-replybot-macos.sh");
 
   assert.match(source, /hdiutil verify/);
@@ -45,6 +45,11 @@ test("macOS verifier checks identity, architecture, trust, notarization, and che
   assert.match(source, /codesign --verify --deep --strict/);
   assert.match(source, /spctl --assess/);
   assert.match(source, /stapler validate/);
+  assert.match(source, /@electron\/asar\/bin\/asar\.js/);
+  assert.match(source, /better-sqlite3/);
+  assert.match(source, /app\.asar\.unpacked/);
+  assert.match(source, /--user-data-dir/);
+  assert.match(source, /Cannot find module/);
   assert.match(source, /shasum -a 256/);
 });
 
