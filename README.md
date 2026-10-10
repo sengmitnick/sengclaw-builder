@@ -76,4 +76,4 @@ gh workflow run replybot-macos.yml \
   -f ref=main
 ```
 
-工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会兼容 pnpm hoisted/isolated 布局检查 external 运行时依赖、解包后的 arm64 原生模块，并实际启动应用进行 10 秒主进程烟测；出现 `Cannot find module` 或未捕获 JavaScript 异常时构建失败。
+工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会兼容 pnpm hoisted/isolated 布局检查 external 运行时依赖、使用打包后的 Electron 二进制真实加载四个 external 模块、检查解包后的 arm64 原生模块，并实际启动应用等待 renderer 进程出现；出现悬空链接、`Cannot find module`、未捕获 JavaScript 异常或只有错误弹窗而没有应用窗口时构建失败。
