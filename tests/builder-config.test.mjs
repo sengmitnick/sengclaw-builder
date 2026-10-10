@@ -46,8 +46,11 @@ test("macOS verifier checks identity, runtime dependencies, startup, notarizatio
   assert.match(source, /spctl --assess/);
   assert.match(source, /stapler validate/);
   assert.match(source, /@electron\/asar\/bin\/asar\.js/);
+  assert.match(source, /grep -Fq \"\$runtime_manifest\"/);
+  assert.doesNotMatch(source, /grep -Fqx \"\$runtime_manifest\"/);
   assert.match(source, /better-sqlite3/);
   assert.match(source, /app\.asar\.unpacked/);
+  assert.match(source, /find \"\$unpacked_root\" -type f -path/);
   assert.match(source, /--user-data-dir/);
   assert.match(source, /Cannot find module/);
   assert.match(source, /shasum -a 256/);

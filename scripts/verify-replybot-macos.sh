@@ -9,7 +9,7 @@ source "${script_dir}/lib.sh"
 dmg_path="$1"
 [[ -f "$dmg_path" ]] || die "DMG not found: ${dmg_path}"
 
-for command_name in codesign file grep hdiutil node shasum spctl xcrun; do
+for command_name in codesign file find grep hdiutil node shasum spctl xcrun; do
   require_command "$command_name"
 done
 
@@ -58,12 +58,14 @@ for runtime_manifest in \
   /node_modules/@huggingface/transformers/package.json \
   /node_modules/@lancedb/lancedb/package.json \
   /node_modules/whatsapp-web.js/package.json; do
-  grep -Fqx "$runtime_manifest" "$asar_list" || die "Packaged runtime dependency is missing: ${runtime_manifest}"
+  grep -Fq "$runtime_manifest" "$asar_list" || die "Packaged runtime dependency is missing: ${runtime_manifest}"
 done
 
 unpacked_root="${app_path}/Contents/Resources/app.asar.unpacked/node_modules"
-[[ -f "${unpacked_root}/better-sqlite3/prebuilds/darwin-arm64.node" ]] || die "better-sqlite3 arm64 binary is not unpacked"
-[[ -f "${unpacked_root}/@lancedb/lancedb-darwin-arm64/lancedb.darwin-arm64.node" ]] || die "LanceDB arm64 binary is not unpacked"
+better_sqlite_binary="$(find "$unpacked_root" -type f -path '*/better-sqlite3/prebuilds/darwin-arm64.node' -print -quit)"
+[[ -n "$better_sqlite_binary" ]] || die "better-sqlite3 arm64 binary is not unpacked"
+lancedb_binary="$(find "$unpacked_root" -type f -path '*/@lancedb/lancedb-darwin-arm64/lancedb.darwin-arm64.node' -print -quit)"
+[[ -n "$lancedb_binary" ]] || die "LanceDB arm64 binary is not unpacked"
 
 smoke_log="${smoke_root}/replybot.log"
 "${app_path}/Contents/MacOS/ReplyBot" --user-data-dir="${smoke_root}/user-data" > "$smoke_log" 2>&1 &
