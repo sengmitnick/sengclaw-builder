@@ -146,6 +146,11 @@ kill -TERM "$smoke_pid"
 wait "$smoke_pid" 2>/dev/null || true
 smoke_pid=""
 
-shasum -a 256 "$dmg_path" > "${dmg_path}.sha256"
+dmg_name="$(basename "$dmg_path")"
+dmg_directory="$(cd "$(dirname "$dmg_path")" && pwd -P)"
+(
+  cd "$dmg_directory"
+  shasum -a 256 "$dmg_name" > "${dmg_name}.sha256"
+)
 
 printf 'Verified signed and notarized ReplyBot DMG: %s\n' "$dmg_path"

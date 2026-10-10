@@ -61,6 +61,7 @@ test("macOS verifier checks identity, runtime dependencies, startup, notarizatio
   assert.match(source, /ReplyBot startup failed/);
   assert.match(source, /pwd -P/);
   assert.match(source, /shasum -a 256/);
+  assert.match(source, /basename \"\$dmg_path\"/);
 });
 
 test("macOS workflow is manual, isolated, and checks out private ReplyBot with LFS", () => {
