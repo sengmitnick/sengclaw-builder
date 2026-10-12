@@ -45,7 +45,18 @@ executable_description="$(file "${app_path}/Contents/MacOS/ReplyBot")"
 
 codesign --verify --deep --strict --verbose=2 "$app_path"
 spctl --assess --type execute --verbose=4 "$app_path"
-xcrun stapler validate "$app_path"
+stapler_validated=""
+for ((stapler_attempt = 1; stapler_attempt <= 5; stapler_attempt += 1)); do
+  if xcrun stapler validate "$app_path"; then
+    stapler_validated="1"
+    break
+  fi
+  if ((stapler_attempt < 5)); then
+    printf 'Apple stapler validation attempt %d failed; retrying in 15 seconds.\n' "$stapler_attempt" >&2
+    sleep 15
+  fi
+done
+[[ -n "$stapler_validated" ]] || die "Apple stapler validation failed after retries"
 
 source_dir="${REPLYBOT_SOURCE_DIR:-${script_dir}/../replybot}"
 asar_cli="${source_dir}/node_modules/@electron/asar/bin/asar.js"

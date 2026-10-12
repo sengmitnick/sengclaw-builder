@@ -45,6 +45,9 @@ test("macOS verifier checks identity, runtime dependencies, startup, notarizatio
   assert.match(source, /codesign --verify --deep --strict/);
   assert.match(source, /spctl --assess/);
   assert.match(source, /stapler validate/);
+  assert.match(source, /stapler_attempt <= 5/);
+  assert.match(source, /sleep 15/);
+  assert.match(source, /Apple stapler validation failed after retries/);
   assert.match(source, /@electron\/asar\/bin\/asar\.js/);
   assert.match(source, /grep -Fq \"\$runtime_manifest\"/);
   assert.doesNotMatch(source, /grep -Fqx \"\$runtime_manifest\"/);
