@@ -12,7 +12,7 @@ on:
         default: main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: replybot-macos-${{ inputs.ref }}
@@ -47,6 +47,21 @@ jobs:
           test "$(uname -m)" = "arm64"
           git lfs version
           git -C replybot lfs pull
+
+      - name: Confirm release version is new
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_version="$(node -p "require('./replybot/apps/desktop/package.json').version")"
+          release_tag="v${release_version}"
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release ${release_tag} already exists and will not be overwritten" >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$release_version" >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$release_tag" >> "$GITHUB_OUTPUT"
+          printf 'source_sha=%s\n' "$(git -C replybot rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -95,6 +110,41 @@ jobs:
           path: |
             assets/*.dmg
             assets/*.dmg.sha256
+
+      - name: Publish public GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          REPLYBOT_SOURCE_SHA: ${{ steps.release.outputs.source_sha }}
+        run: |
+          versioned_dmg="assets/ReplyBot-${RELEASE_VERSION}-arm64.dmg"
+          public_dmg="assets/ReplyBot-macOS-arm64.dmg"
+          public_checksum="${public_dmg}.sha256"
+          test -f "$versioned_dmg"
+          cp "$versioned_dmg" "$public_dmg"
+          (
+            cd assets
+            shasum -a 256 "$(basename "$public_dmg")" > "$(basename "$public_checksum")"
+          )
+          release_notes="$RUNNER_TEMP/replybot-release-notes.md"
+          {
+            printf 'ReplyBot %s for macOS Apple Silicon.\n\n' "$RELEASE_VERSION"
+            printf -- '- Developer ID signed and Apple notarized\n'
+            printf -- '- Bundle ID: `com.sengclaw.reply`\n'
+            printf -- '- Source revision: `%s`\n' "$REPLYBOT_SOURCE_SHA"
+            printf -- '- CI run: %s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            printf -- '- SHA-256: `%s`\n\n' "$(shasum -a 256 "$public_dmg" | awk '{print $1}')"
+            printf 'Open ReplyBot, copy the device ID from License, and ask your ReplyBot administrator for a Production License.\n'
+          } > "$release_notes"
+          gh release create "$RELEASE_TAG" \
+            "$public_dmg#ReplyBot for macOS Apple Silicon" \
+            "$public_checksum#SHA-256 checksum" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "ReplyBot v${RELEASE_VERSION}" \
+            --notes-file "$release_notes" \
+            --latest
 
       - name: Stop PostgreSQL
         if: always()

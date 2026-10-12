@@ -8,7 +8,7 @@
 - `sengmitnick/sengclaw-builder`：公开构建脚本和手动 GitHub Actions。
 - License Production 私钥：只存在于官网服务的持久化密钥卷，绝不进入两个 Git 仓库、GitHub Secrets 或桌面客户端。
 
-第一版只构建 Apple Silicon macOS DMG。成功产物保存为 GitHub Actions Artifact，不自动创建公开 Release。
+第一版只构建 Apple Silicon macOS DMG。成功产物既保存为短期 GitHub Actions Artifact，也以固定文件名发布到公开 GitHub Release，供官网稳定下载入口使用。
 
 ## 首次启动顺序
 
@@ -76,4 +76,4 @@ gh workflow run replybot-macos.yml \
   -f ref=main
 ```
 
-工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会兼容 pnpm hoisted/isolated 布局检查 external 运行时依赖、使用打包后的 Electron 二进制真实加载四个 external 模块、检查解包后的 arm64 原生模块，并实际启动应用等待 renderer 进程出现；出现悬空链接、`Cannot find module`、未捕获 JavaScript 异常或只有错误弹窗而没有应用窗口时构建失败。
+工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会兼容 pnpm hoisted/isolated 布局检查 external 运行时依赖、使用打包后的 Electron 二进制真实加载四个 external 模块、检查解包后的 arm64 原生模块，并实际启动应用等待 renderer 进程出现；出现悬空链接、`Cannot find module`、未捕获 JavaScript 异常或只有错误弹窗而没有应用窗口时构建失败。全部验证通过后，工作流按桌面端 `package.json` 版本创建不可覆盖的 `v<version>` Release，并发布固定名 `ReplyBot-macOS-arm64.dmg` 及校验文件；如同版本 Release 已存在，任务会提前失败而不是覆盖历史产物。

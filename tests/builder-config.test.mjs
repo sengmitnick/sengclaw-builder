@@ -64,13 +64,13 @@ test("macOS verifier checks identity, runtime dependencies, startup, notarizatio
   assert.match(source, /basename \"\$dmg_path\"/);
 });
 
-test("macOS workflow is manual, isolated, and checks out private ReplyBot with LFS", () => {
+test("macOS workflow is manual, isolated, and publishes an immutable public release", () => {
   const source = read(".github/workflows/replybot-macos.yml");
 
   assert.match(source, /workflow_dispatch:/);
   assert.doesNotMatch(source, /pull_request:/);
   assert.doesNotMatch(source, /^\s+push:/m);
-  assert.match(source, /contents: read/);
+  assert.match(source, /contents: write/);
   assert.match(source, /runs-on: macos-15/);
   assert.match(source, /environment: macos-release/);
   assert.match(source, /repository: \$\{\{ vars\.REPLYBOT_REPOSITORY \}\}/);
@@ -81,4 +81,8 @@ test("macOS workflow is manual, isolated, and checks out private ReplyBot with L
   assert.match(source, /version: 11\.28\.4/);
   assert.match(source, /scripts\/build-replybot-macos\.sh/);
   assert.match(source, /actions\/upload-artifact@v6/);
+  assert.match(source, /gh release view/);
+  assert.match(source, /gh release create/);
+  assert.match(source, /ReplyBot-macOS-arm64\.dmg/);
+  assert.match(source, /--latest/);
 });
