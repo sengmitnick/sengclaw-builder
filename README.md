@@ -1,6 +1,15 @@
 # SengClaw Builder
 
-`sengclaw-builder` 是 ReplyBot 的公开构建控制仓库，参考 [`qinglion/yuejuan-builder`](https://github.com/qinglion/yuejuan-builder) 的职责分离方式，把可审计的 CI、签名、公证和产物校验从私有产品源码中拆出来。
+`sengclaw-builder` 是多应用共用的公开构建平台，ReplyBot 是第一个接入应用。参考 [`qinglion/yuejuan-builder`](https://github.com/qinglion/yuejuan-builder) 的职责分离方式，把可审计的 CI、签名、公证和产物校验从私有产品源码中拆出来。
+
+## 应用与运行方式
+
+| 应用/构建配置 | 运行位置 | 凭据与产物边界 |
+| --- | --- | --- |
+| ReplyBot macOS / Web | Builder 手动工作流 | 沿用 `macos-release` Environment、ReplyBot 专用 Deploy Key 和既有公开 Release 策略 |
+| Hub / Tauri＋Python macOS | 私有应用仓库手动调用 Builder 的 `macos-tauri-python.yml` | 调用方显式传 Secrets；源码、日志、Artifact 留调用方，不创建公开 Release |
+
+共用平台不代表共用应用权限或默认公开所有产物。可复用 workflow 的 GitHub 上下文属于调用方，不能直接读取 Builder 的 Environment Secrets；私有应用需自行传入获准的 Secrets。调用方应固定完整 Builder commit SHA，不跟随浮动 main。新增 profile 说明见 [多应用构建边界](docs/architecture/2026-11-03-multi-application-builder.md)。下文保留 ReplyBot 已投入使用的具体流程，不代表其他应用必须使用其 License、数据库或公开发布方式。
 
 ## 仓库边界
 
