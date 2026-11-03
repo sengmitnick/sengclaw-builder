@@ -9,6 +9,8 @@
 | ReplyBot macOS / Web | Builder 手动工作流 | 沿用 `macos-release` Environment、ReplyBot 专用 Deploy Key 和既有公开 Release 策略 |
 | Hub / Tauri＋Python macOS、Windows | Builder 手动运行 `hub-desktop.yml` | Hub 专用只读 Deploy Key；Mac 复用 `macos-release` 的 Apple 凭据；安装包下载需显式开启，不创建 Release |
 
+Hub 云端服务镜像继续由私有 `sengclaw-hub` 的 `publish-hub.yml` 构建并推送 ACR，不迁移到本仓库。这是用户确认的分工，客户端与服务器无需共用构建位置。
+
 构建实际运行在公开 Builder，私有产品库仅提供源码。不能由私有库调用 reusable workflow 代替迁移，那样仍计入私有调用方额度。每个应用使用独立只读源码凭据，日志是公开的；不上传源码、配置或凭据。Hub 安装包需要手动开启 `upload_installers`，默认关闭，保留 7 天。详细边界见 [多应用构建边界](docs/architecture/2026-11-03-multi-application-builder.md)。下文的 License、数据库和公开 Release 流程仅适用于 ReplyBot。
 
 ### Hub 构建

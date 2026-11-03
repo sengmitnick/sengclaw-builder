@@ -21,6 +21,6 @@ Python 使用 setup-python `3.12` 引导，再由 uv 准备项目锁定的 `3.12
 
 ## 兼容与验证
 
-ReplyBot 工作流和凭据不变。Hub 移除私有库 Mac/Windows 工作流；ACR 暂保留显式手动入口，关闭 push 自动发布，待独立配置 Builder 的 ACR 凭据后再迁移，不混用 ReplyBot 发布凭据。测试检查手动入口、源码范围、凭据映射、Artifact 白名单。实际 Builder run、Mac 安装与 Windows 实机验收分别留证，静态检查不算发布成功。
+ReplyBot 工作流和凭据不变。Hub 移除私有库 Mac/Windows 工作流。用户进一步明确：**桌面在公开 Builder，服务器继续在私有 Hub**；不再计划迁移 ACR，也不要求向 Builder 配置 ACR 凭据。私有镜像工作流保持显式手动入口、关闭 push 自动发布，不混用 ReplyBot 发布凭据。测试检查手动入口、源码范围、凭据映射、Artifact 白名单。实际 Builder run、Mac 安装与 Windows 实机验收分别留证，静态检查不算发布成功。
 
 参考：[GitHub 可复用工作流](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)。
