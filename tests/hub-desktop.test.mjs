@@ -29,25 +29,30 @@ test('Windows signs through a pinned adapter with isolated release secrets', () 
   assert.match(windows, /ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747/);
   assert.match(windows, /tauri build --no-bundle/);
   assert.match(windows, /hub-windows-release.mjs/);
-  assert.match(windows, /verify-hub-windows.ps1/);
+  assert.match(windows, /verify-hub-windows-portable.ps1/);
+  assert.match(windows, /windows-portable\/\*\.zip/);
+  assert.doesNotMatch(windows, /nsis|msi/i);
   assert.match(windows, /Hub-windows-signed-/);
   assert.doesNotMatch(windows, /continue-on-error|unsigned|@develop/);
-  assert.ok(windows.indexOf('verify-hub-windows.ps1') < windows.indexOf('actions/upload-artifact'));
+  assert.ok(windows.indexOf('verify-hub-windows-portable.ps1') < windows.indexOf('actions/upload-artifact'));
 });
-test('Signing is integrated into bundling and fails closed without leaking adapter output', () => {
+test('Portable executables are signed before ZIP creation and fail closed', () => {
   const release = readFileSync(new URL('../scripts/hub-windows-release.mjs', import.meta.url), 'utf8');
   const sign = readFileSync(new URL('../scripts/hub-windows-sign.mjs', import.meta.url), 'utf8');
-  const verify = readFileSync(new URL('../scripts/verify-hub-windows.ps1', import.meta.url), 'utf8');
-  assert.match(release, /signCommand/);
-  assert.match(release, /'%1'/);
+  const verify = readFileSync(new URL('../scripts/verify-hub-windows-portable.ps1', import.meta.url), 'utf8');
+  for (const executable of ['sengclaw-hub-desktop.exe', 'hub-sidecar.exe', 'meegle.exe', 'lark-cli.exe']) {
+    assert.match(release, new RegExp(executable.replaceAll('.', '\\.')));
+  }
+  assert.ok(release.indexOf('hub-windows-sign.mjs') < release.indexOf('package-windows-portable.mjs'));
   assert.match(sign, /result.status !== 0 \|\| \(!preflight && !existsSync\(signed\)\)/);
   assert.match(sign, /INPUT_MALWARE_BLOCK: 'true'/);
   assert.match(sign, /writeFileSync\(path.join\(stage, 'action-output'\), ''\)/);
   assert.match(sign, /writeFileSync\(path.join\(stage, 'action-env'\), ''\)/);
   assert.match(sign, /TimeStamperCertificate/);
   assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);
-  assert.match(verify, /Start-Process/);
-  assert.match(verify, /uninstall.exe/);
+  assert.match(verify, /Expand-Archive/);
+  assert.match(verify, /工作助手\.exe/);
+  assert.match(verify, /package_type = 'portable-zip'/);
   assert.match(verify, /Signer mismatch/);
   assert.match(verify, /customer_machine_ui_acceptance = 'not yet verified'/);
 });

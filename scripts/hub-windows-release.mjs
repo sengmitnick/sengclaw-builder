@@ -1,5 +1,5 @@
 import {execFileSync} from 'node:child_process';
-import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -11,20 +11,26 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const desktop = path.join(root, 'hub/desktop');
 const runtime = path.join(process.env.RUNNER_TEMP, 'hub-windows-signing');
 mkdirSync(runtime, {recursive: true});
-const config = path.join(runtime, 'signing.json');
-// Tauri signs after binary patching and before embedding, including the uninstaller.
-writeFileSync(config, JSON.stringify({bundle: {windows: {signCommand: {
-  cmd: process.execPath,
-  args: [path.join(root, 'scripts/hub-windows-sign.mjs'), '%1'],
-}}}}));
+const release = path.join(desktop, 'src-tauri/target/release');
+const executables = [
+  'sengclaw-hub-desktop.exe',
+  'hub-sidecar.exe',
+  'meegle.exe',
+  'lark-cli.exe',
+];
 try {
-execFileSync(process.execPath, [path.join(desktop, 'node_modules/@tauri-apps/cli/tauri.js'),
-  'bundle', '--bundles', 'nsis', '--config', 'src-tauri/tauri.windows.conf.json',
-  '--config', config], {cwd: desktop, stdio: 'inherit'});
-execFileSync(process.execPath, [path.join(desktop, 'scripts/verify-bundle.mjs')],
-  {cwd: desktop, stdio: 'inherit'});
+  for (const name of executables) {
+    const target = path.join(release, name);
+    if (!existsSync(target)) throw Error(`Missing portable executable: ${name}`);
+    execFileSync(process.execPath, [path.join(root, 'scripts/hub-windows-sign.mjs'), target],
+      {cwd: root, stdio: 'inherit'});
+  }
+  execFileSync(process.execPath, [path.join(desktop, 'scripts/verify-bundle.mjs')],
+    {cwd: desktop, stdio: 'inherit'});
+  execFileSync(process.execPath, [path.join(desktop, 'scripts/package-windows-portable.mjs')],
+    {cwd: desktop, stdio: 'inherit'});
 } catch {
   const failure = path.join(runtime, 'failure.json');
   if (existsSync(failure)) console.error(readFileSync(failure, 'utf8'));
-  throw Error('Signed Windows packaging failed; no installer will be uploaded.');
+  throw Error('Signed Windows portable packaging failed; no archive will be uploaded.');
 }

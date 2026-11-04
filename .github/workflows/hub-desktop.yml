@@ -15,7 +15,7 @@ on:
         default: macos
         options: [macos, windows, both]
       upload_installers:
-        description: Allow installer downloads from this PUBLIC repository (no Release)
+        description: Allow signed package downloads from this PUBLIC repository (no Release)
         required: true
         type: boolean
         default: false
@@ -163,7 +163,7 @@ jobs:
         working-directory: hub/desktop
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri
-      - name: Sign executables and NSIS package with SSL.com
+      - name: Sign portable executables and create ZIP
         working-directory: .
         env:
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
@@ -171,11 +171,11 @@ jobs:
           CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
           ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
         run: node scripts/hub-windows-release.mjs
-      - name: Verify installed files and produce download receipt
+      - name: Verify portable files and produce download receipt
         working-directory: .
         shell: pwsh
-        run: ./scripts/verify-hub-windows.ps1
-      - name: Upload verified signed Windows installer
+        run: ./scripts/verify-hub-windows-portable.ps1
+      - name: Upload verified signed Windows portable ZIP
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -183,5 +183,5 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: |
-            hub/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            hub/.runtime/releases/windows-portable/*.zip
             hub-windows-receipt.json
