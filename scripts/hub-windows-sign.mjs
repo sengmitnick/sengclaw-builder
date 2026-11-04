@@ -1,12 +1,13 @@
 import {spawnSync} from 'node:child_process';
-import {copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs';
+import {copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isPortableExecutable, signingPayloadName} from './windows-pe.mjs';
 
 if (process.platform !== 'win32') throw Error('Windows runner required.');
 const preflight = process.argv[2] === '--preflight';
 const target = process.argv[2];
-if (!preflight && (!target || !existsSync(target) || !['.exe', '.dll'].includes(path.extname(target).toLowerCase()))) {
+if (!preflight && (!target || !existsSync(target) || !isPortableExecutable(readFileSync(target)))) {
   throw Error('Expected an existing PE executable supplied by Tauri.');
 }
 for (const key of ['ES_USERNAME', 'ES_PASSWORD', 'CREDENTIAL_ID', 'ES_TOTP_SECRET']) {
@@ -24,7 +25,7 @@ try {
   // actions/core requires command files to exist before exportVariable/setOutput.
   writeFileSync(path.join(stage, 'action-output'), '');
   writeFileSync(path.join(stage, 'action-env'), '');
-  const basename = `payload${path.extname(target).toLowerCase()}`;
+  const basename = signingPayloadName(target);
   if (!preflight) copyFileSync(target, path.join(input, basename));
   const result = spawnSync(process.execPath, [path.join(root, 'signing-adapter/dist/index.js')], {
     cwd: runtime, encoding: 'utf8', timeout: 300000, maxBuffer: 16 * 1024 * 1024,
