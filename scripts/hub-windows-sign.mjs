@@ -46,9 +46,11 @@ try {
     const errors = diagnostics.split(/\r?\n/).filter(line => /::error::/.test(line))
       .filter(line => !/-(username|password|totp_secret|credential_id)=/.test(line))
       .map(line => line.replace(/^.*::error::/, '').slice(0, 500)).slice(-3);
-    writeFileSync(path.join(runtime, 'failure.json'), JSON.stringify({
+    const failure = JSON.stringify({
       file: path.basename(target), exit: result.status, error: result.error?.code, errors,
-    }));
+    });
+    writeFileSync(path.join(runtime, 'failure.json'), failure);
+    if (preflight) console.error(failure);
     // Never print the adapter command line, captured output, or credentials.
     throw Error(`SSL.com signing failed for ${path.basename(target)} (exit ${result.status}). No unsigned fallback.`);
   }
