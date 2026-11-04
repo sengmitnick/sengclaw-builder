@@ -159,7 +159,7 @@ jobs:
           CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
           ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
         run: node scripts/hub-windows-sign.mjs --preflight
-      - run: npm ci && npm run check && npm run prepare:sidecar && npx tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
+      - run: npm ci && npm run check && npm run prepare:tools && npm run prepare:sidecar && npx tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
         working-directory: hub/desktop
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri

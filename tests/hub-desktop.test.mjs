@@ -28,6 +28,9 @@ test('Windows signs through a pinned adapter with isolated release secrets', () 
   }
   assert.match(windows, /ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747/);
   assert.match(windows, /tauri build --no-bundle/);
+  assert.match(windows, /npm run prepare:tools/);
+  assert.ok(windows.indexOf('npm run prepare:tools') < windows.indexOf('npm run prepare:sidecar'));
+  assert.ok(windows.indexOf('npm run prepare:sidecar') < windows.indexOf('tauri build --no-bundle'));
   assert.match(windows, /hub-windows-release.mjs/);
   assert.match(windows, /verify-hub-windows-portable.ps1/);
   assert.match(windows, /windows-portable\/\*\.zip/);
