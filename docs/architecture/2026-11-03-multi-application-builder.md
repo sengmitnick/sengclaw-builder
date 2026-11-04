@@ -9,13 +9,13 @@ Hub 的 `hub-desktop.yml` 直接在 **sengmitnick/sengclaw-builder** 手动执�
 - `HUB_DEPLOY_KEY` 仅供读取 Hub，公钥为 Hub 只读 Deploy Key，私钥只存 Builder Secret。绝不复用 ReplyBot Key。
 - 输入为完整 40 位 SHA，并校验属于 Hub main 历史；checkout 不持久化凭据。
 - Mac job 使用 Builder `macos-release` 已有 P12/P8，映射到产品脚本 `HUB_*` 参数，固定 Team `87WNRG9285`，证书不匹配则停止。
-- Windows 不挂 Apple Environment，不接收签名 Secrets，产物标记未签名预览。
+- Windows 不挂 Apple Environment。2026-11-04 起使用独立 `windows-release` Environment 的 SSL.com 四项凭据，经固定版本官方适配器完成 Authenticode 签名；无有效时间戳或安装校验失败时不上传产物。
 - 工作流只接受 main 手动运行，没有 PR/push 签名入口。新任务不取消正在公证的任务。
 - Hub 原私有仓库中已配置的签名 Secrets 不再被新入口使用，本次不重置或导出。
 
 公开 Builder 的日志和 Artifact 不能当私有存储。只拉源码到临时 runner，不提交源码、不保存源码缓存、不上传整个工作区或 `.runtime`。安装包下载默认关闭；本次用户已明确同意上传安装包，触发时显式开启。
 
-Mac 只有测试、签名、公证 Accepted、staple/Gatekeeper 全部成功后才上传 ZIP 和 `release.json`，不公开失败候选包或原始公证日志。不创建 Release。Windows 只上传 NSIS EXE，保留 7 天。安装包本身包含程序运行代码，与公开源码仓库是不同披露范围。
+Mac 只有测试、签名、公证 Accepted、staple/Gatekeeper 全部成功后才上传 ZIP 和 `release.json`，不公开失败候选包或原始公证日志。不创建 Release。Windows 只上传签名 NSIS EXE 和不含秘密的签名/静默安装验证回执，保留 7 天。安装包本身包含程序运行代码，与公开源码仓库是不同披露范围。
 
 Python 使用 setup-python `3.12` 引导，再由 uv 准备项目锁定的 `3.12.14`，避免 setup-python 缺少特定 macOS arm64 小版本导致失败。
 

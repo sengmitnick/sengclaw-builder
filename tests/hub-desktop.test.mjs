@@ -17,8 +17,37 @@ test('Hub source access is dedicated and pinned to main ancestry', () => {
   assert.equal((workflow.match(/secrets.HUB_DEPLOY_KEY/g) || []).length, 2);
   assert.equal((workflow.match(/git merge-base --is-ancestor/g) || []).length, 2);
   assert.match(workflow, /\^\[a-f0-9\]\{40\}\$/);
-  assert.equal((workflow.match(/persist-credentials: false/g) || []).length, 4);
+  assert.equal((workflow.match(/persist-credentials: false/g) || []).length, 5);
   assert.doesNotMatch(workflow, /REPLYBOT_DEPLOY_KEY|secrets: inherit/);
+});
+test('Windows signs through a pinned adapter with isolated release secrets', () => {
+  const windows = workflow.split('  windows:')[1];
+  assert.match(windows, /environment: windows-release/);
+  for (const key of ['ES_USERNAME', 'ES_PASSWORD', 'CREDENTIAL_ID', 'ES_TOTP_SECRET']) {
+    assert.match(windows, new RegExp(`secrets\\.${key}`));
+  }
+  assert.match(windows, /ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747/);
+  assert.match(windows, /tauri build --no-bundle/);
+  assert.match(windows, /hub-windows-release.mjs/);
+  assert.match(windows, /verify-hub-windows.ps1/);
+  assert.match(windows, /Hub-windows-signed-/);
+  assert.doesNotMatch(windows, /continue-on-error|unsigned|@develop/);
+  assert.ok(windows.indexOf('verify-hub-windows.ps1') < windows.indexOf('actions/upload-artifact'));
+});
+test('Signing is integrated into bundling and fails closed without leaking adapter output', () => {
+  const release = readFileSync(new URL('../scripts/hub-windows-release.mjs', import.meta.url), 'utf8');
+  const sign = readFileSync(new URL('../scripts/hub-windows-sign.mjs', import.meta.url), 'utf8');
+  const verify = readFileSync(new URL('../scripts/verify-hub-windows.ps1', import.meta.url), 'utf8');
+  assert.match(release, /signCommand/);
+  assert.match(release, /'%1'/);
+  assert.match(sign, /result.status !== 0 \|\| !existsSync\(signed\)/);
+  assert.match(sign, /INPUT_MALWARE_BLOCK: 'true'/);
+  assert.match(sign, /TimeStamperCertificate/);
+  assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);
+  assert.match(verify, /Start-Process/);
+  assert.match(verify, /uninstall.exe/);
+  assert.match(verify, /Signer mismatch/);
+  assert.match(verify, /customer_machine_ui_acceptance = 'not yet verified'/);
 });
 test('Mac reuses existing Builder environment; Windows receives no Apple keys', () => {
   assert.match(workflow, /environment: macos-release/);

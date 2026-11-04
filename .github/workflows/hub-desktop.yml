@@ -103,7 +103,8 @@ jobs:
   windows:
     if: github.repository == 'sengmitnick/sengclaw-builder' && github.ref == 'refs/heads/main' && (inputs.platform == 'windows' || inputs.platform == 'both')
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 60
+    environment: windows-release
     defaults:
       run:
         working-directory: hub
@@ -143,15 +144,36 @@ jobs:
           node-version: '22'
       - run: pip install uv==0.12.9
       - run: uv sync --locked --group desktop --python 3.12.14
-      - run: npm ci && npm run check && npm run build
+      - name: Check out pinned SSL.com signing adapter
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: SSLcom/esigner-codesign
+          ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747
+          persist-credentials: false
+          path: signing-adapter
+      - run: npm ci && npm run check && npm run prepare:sidecar && npx tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
         working-directory: hub/desktop
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri
-      - name: Upload unsigned Windows preview
+      - name: Sign executables and NSIS package with SSL.com
+        working-directory: .
+        env:
+          ES_USERNAME: ${{ secrets.ES_USERNAME }}
+          ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
+          CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
+          ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
+        run: node scripts/hub-windows-release.mjs
+      - name: Verify installed files and produce download receipt
+        working-directory: .
+        shell: pwsh
+        run: ./scripts/verify-hub-windows.ps1
+      - name: Upload verified signed Windows installer
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Hub-windows-unsigned-${{ inputs.source_sha }}-${{ github.run_attempt }}
+          name: Hub-windows-signed-${{ inputs.source_sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: error
-          path: hub/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          path: |
+            hub/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            hub-windows-receipt.json

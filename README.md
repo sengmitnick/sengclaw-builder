@@ -22,7 +22,11 @@ gh workflow run hub-desktop.yml --repo sengmitnick/sengclaw-builder \
   -f source_sha=<Hub完整提交SHA> -f platform=macos -f upload_installers=false
 ```
 
-`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包，Windows 为未签名预览包。成功构建不等于实机交互验收。确认允许公开下载安装包后再将 `upload_installers` 设为 `true`。
+`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名包。成功构建不等于客户实机交互验收。确认允许公开下载安装包后再将 `upload_installers` 设为 `true`。
+
+Windows 使用独立的 `windows-release` Environment，配置 `ES_USERNAME`、`ES_PASSWORD`、`CREDENTIAL_ID`、`ES_TOTP_SECRET` 四项 Secrets（不是 Variables）。建议限制 main 分支并设置发布审批；不要发送或提交秘密。构建通过固定 SHA 的 SSL.com 官方适配器，在 Tauri 打包过程中签署主程序、sidecar、卸载程序及安装包，并验证有效时间戳。签名错误不会回退到未签名包。公开日志不输出适配器原始命令或结果。
+
+上传前，在 Windows runner 的全新含空格目录执行 NSIS 静默安装，核对安装后的程序/sidecar/卸载程序签名及签名者一致性，运行已安装 sidecar `--help`，生成 `hub-windows-receipt.json`（含 SHA256）。只上传安装包和该回执，保留 7 天，不创建公开 Release。此检查不替代客户电脑的 GUI、权限和登录验收；签名也不保证消除 SmartScreen 提醒或解决所有写入错误。
 
 ## 仓库边界
 
