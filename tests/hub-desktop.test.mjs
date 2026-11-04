@@ -40,7 +40,7 @@ test('Signing is integrated into bundling and fails closed without leaking adapt
   const verify = readFileSync(new URL('../scripts/verify-hub-windows.ps1', import.meta.url), 'utf8');
   assert.match(release, /signCommand/);
   assert.match(release, /'%1'/);
-  assert.match(sign, /result.status !== 0 \|\| !existsSync\(signed\)/);
+  assert.match(sign, /result.status !== 0 \|\| \(!preflight && !existsSync\(signed\)\)/);
   assert.match(sign, /INPUT_MALWARE_BLOCK: 'true'/);
   assert.match(sign, /TimeStamperCertificate/);
   assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);

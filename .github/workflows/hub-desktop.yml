@@ -151,6 +151,14 @@ jobs:
           ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747
           persist-credentials: false
           path: signing-adapter
+      - name: Check Windows signing tool before compiling
+        working-directory: .
+        env:
+          ES_USERNAME: ${{ secrets.ES_USERNAME }}
+          ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
+          CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
+          ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
+        run: node scripts/hub-windows-sign.mjs --preflight
       - run: npm ci && npm run check && npm run prepare:sidecar && npx tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
         working-directory: hub/desktop
       - run: cargo test --locked

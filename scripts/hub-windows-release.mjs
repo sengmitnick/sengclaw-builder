@@ -1,5 +1,5 @@
 import {execFileSync} from 'node:child_process';
-import {mkdirSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -17,8 +17,14 @@ writeFileSync(config, JSON.stringify({bundle: {windows: {signCommand: {
   cmd: process.execPath,
   args: [path.join(root, 'scripts/hub-windows-sign.mjs'), '%1'],
 }}}}));
+try {
 execFileSync(process.execPath, [path.join(desktop, 'node_modules/@tauri-apps/cli/tauri.js'),
   'bundle', '--bundles', 'nsis', '--config', 'src-tauri/tauri.windows.conf.json',
   '--config', config], {cwd: desktop, stdio: 'inherit'});
 execFileSync(process.execPath, [path.join(desktop, 'scripts/verify-bundle.mjs')],
   {cwd: desktop, stdio: 'inherit'});
+} catch {
+  const failure = path.join(runtime, 'failure.json');
+  if (existsSync(failure)) console.error(readFileSync(failure, 'utf8'));
+  throw Error('Signed Windows packaging failed; no installer will be uploaded.');
+}
