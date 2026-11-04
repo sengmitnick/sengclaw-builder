@@ -21,6 +21,9 @@ try {
   const output = path.join(stage, 'output');
   mkdirSync(input);
   mkdirSync(output);
+  // actions/core requires command files to exist before exportVariable/setOutput.
+  writeFileSync(path.join(stage, 'action-output'), '');
+  writeFileSync(path.join(stage, 'action-env'), '');
   const basename = `payload${path.extname(target).toLowerCase()}`;
   if (!preflight) copyFileSync(target, path.join(input, basename));
   const result = spawnSync(process.execPath, [path.join(root, 'signing-adapter/dist/index.js')], {

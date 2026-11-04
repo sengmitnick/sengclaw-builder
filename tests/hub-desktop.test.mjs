@@ -42,6 +42,8 @@ test('Signing is integrated into bundling and fails closed without leaking adapt
   assert.match(release, /'%1'/);
   assert.match(sign, /result.status !== 0 \|\| \(!preflight && !existsSync\(signed\)\)/);
   assert.match(sign, /INPUT_MALWARE_BLOCK: 'true'/);
+  assert.match(sign, /writeFileSync\(path.join\(stage, 'action-output'\), ''\)/);
+  assert.match(sign, /writeFileSync\(path.join\(stage, 'action-env'\), ''\)/);
   assert.match(sign, /TimeStamperCertificate/);
   assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);
   assert.match(verify, /Start-Process/);
