@@ -11,6 +11,8 @@ test('Hub jobs run directly in Builder, not in a private caller', () => {
   assert.match(workflow, /runs-on: windows-2022/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /contents: read/);
+  assert.match(workflow, /options: \[seng, finloop, both\]/);
+  assert.equal((workflow.match(/matrix:\n\s+enterprise:/g) || []).length, 2);
 });
 test('Hub source access is dedicated and pinned to main ancestry', () => {
   assert.equal((workflow.match(/repository: sengmitnick\/sengclaw-hub/g) || []).length, 2);
@@ -35,7 +37,7 @@ test('Windows signs through a pinned adapter with isolated release secrets', () 
   assert.match(windows, /verify-hub-windows-portable.ps1/);
   assert.match(windows, /windows-portable\/\*\.zip/);
   assert.doesNotMatch(windows, /nsis|msi/i);
-  assert.match(windows, /Hub-windows-signed-/);
+  assert.match(windows, /Hub-\$\{\{ matrix\.enterprise \}\}-windows-signed-/);
   assert.doesNotMatch(windows, /continue-on-error|unsigned|@develop/);
   assert.ok(windows.indexOf('verify-hub-windows-portable.ps1') < windows.indexOf('actions/upload-artifact'));
 });
@@ -54,10 +56,19 @@ test('Portable executables are signed before ZIP creation and fail closed', () =
   assert.match(sign, /TimeStamperCertificate/);
   assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);
   assert.match(verify, /Expand-Archive/);
-  assert.match(verify, /工作助手\.exe/);
+  assert.match(verify, /AI研发流程助手/);
+  assert.match(verify, /项目管理/);
   assert.match(verify, /package_type = 'portable-zip'/);
   assert.match(verify, /Signer mismatch/);
   assert.match(verify, /customer_machine_ui_acceptance = 'not yet verified'/);
+});
+test('Each enterprise build receives only its fixed package key and selected secret', () => {
+  assert.equal((workflow.match(/HUB_ENTERPRISE_KEY: \$\{\{ matrix\.enterprise \}\}/g) || []).length, 4);
+  assert.match(workflow, /secrets\.HUB_ENTERPRISE_CONFIG_SENG_JSON/);
+  assert.match(workflow, /secrets\.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON/);
+  assert.match(workflow, /tauri\.\$\{HUB_ENTERPRISE_KEY\}\.conf\.json/);
+  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-macos-/);
+  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-windows-signed-/);
 });
 test('Mac reuses existing Builder environment; Windows receives no Apple keys', () => {
   assert.match(workflow, /environment: macos-release/);

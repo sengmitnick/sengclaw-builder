@@ -1,5 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+$products = @{ seng = 'AI研发流程助手'; finloop = '项目管理' }
+$productName = $products[$env:HUB_ENTERPRISE_KEY]
+if (!$productName) { throw 'HUB_ENTERPRISE_KEY must be seng or finloop.' }
 $archives = @(Get-ChildItem (Join-Path $root 'hub/.runtime/releases/windows-portable') -Filter '*-windows-x64-portable.zip')
 if ($archives.Count -ne 1) { throw 'Expected exactly one portable Windows ZIP.' }
 
@@ -21,7 +24,7 @@ Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath $destination
 $folders = @(Get-ChildItem $destination -Directory)
 if ($folders.Count -ne 1) { throw 'Portable ZIP must contain one top-level folder.' }
 $portable = $folders[0].FullName
-$files = @('工作助手.exe', 'hub-sidecar.exe', 'meegle.exe', 'lark-cli.exe')
+$files = @("$productName.exe", 'hub-sidecar.exe', 'meegle.exe', 'lark-cli.exe')
 $signature = $null
 foreach ($name in $files) {
     $file = Join-Path $portable $name
@@ -41,6 +44,8 @@ if (($lark -join ' ') -notmatch [regex]::Escape($toolchain.'lark-cli'.version)) 
 
 $receipt = [ordered]@{
     version = (Get-Content (Join-Path $root 'hub/desktop/package.json') | ConvertFrom-Json).version
+    enterprise = $env:HUB_ENTERPRISE_KEY
+    product_name = $productName
     source_sha = (git -C (Join-Path $root 'hub') rev-parse HEAD)
     package = $archives[0].Name
     package_type = 'portable-zip'

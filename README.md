@@ -19,10 +19,10 @@ Hub 云端服务镜像继续由私有 `sengclaw-hub` 的 `publish-hub.yml` 构�
 
 ```sh
 gh workflow run hub-desktop.yml --repo sengmitnick/sengclaw-builder \
-  -f source_sha=<Hub完整提交SHA> -f platform=macos -f upload_installers=false
+  -f source_sha=<Hub完整提交SHA> -f enterprise=seng -f platform=macos -f upload_installers=false
 ```
 
-`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名免安装 ZIP，不生成 NSIS/MSI。成功构建不等于客户实机交互验收。确认允许公开下载客户端包后再将 `upload_installers` 设为 `true`。
+`enterprise` 可选 `seng`、`finloop`、`both`；每个值生成名称、Bundle ID、数据目录和云端地址固定的单企业客户端。`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名免安装 ZIP，不生成 NSIS/MSI。成功构建不等于客户实机交互验收。确认允许公开下载客户端包后再将 `upload_installers` 设为 `true`。
 
 Windows 使用独立的 `windows-release` Environment，配置 `ES_USERNAME`、`ES_PASSWORD`、`CREDENTIAL_ID`、`ES_TOTP_SECRET` 四项 Secrets（不是 Variables）。建议限制 main 分支并设置发布审批；不要发送或提交秘密。构建通过固定 SHA 的 SSL.com 官方适配器，在 Tauri 打包过程中签署主程序、sidecar、卸载程序及安装包，并验证有效时间戳。签名错误不会回退到未签名包。公开日志不输出适配器原始命令或结果。
 

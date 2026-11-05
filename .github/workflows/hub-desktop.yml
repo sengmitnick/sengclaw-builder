@@ -1,5 +1,5 @@
 name: Hub Desktop
-run-name: Hub ${{ inputs.platform }} · ${{ inputs.source_sha }}
+run-name: Hub ${{ inputs.enterprise }} · ${{ inputs.platform }} · ${{ inputs.source_sha }}
 
 on:
   workflow_dispatch:
@@ -14,6 +14,12 @@ on:
         type: choice
         default: macos
         options: [macos, windows, both]
+      enterprise:
+        description: Fixed single-enterprise client
+        required: true
+        type: choice
+        default: seng
+        options: [seng, finloop, both]
       upload_installers:
         description: Allow signed package downloads from this PUBLIC repository (no Release)
         required: true
@@ -33,6 +39,10 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 75
     environment: macos-release
+    strategy:
+      fail-fast: false
+      matrix:
+        enterprise: ${{ fromJSON(inputs.enterprise == 'both' && '["seng","finloop"]' || format('["{0}"]', inputs.enterprise)) }}
     defaults:
       run:
         working-directory: hub
@@ -79,20 +89,30 @@ jobs:
         working-directory: hub/desktop
       - name: Sign and notarize using Builder's existing Apple credentials
         env:
+          HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CONFIG_SENG: ${{ secrets.HUB_ENTERPRISE_CONFIG_SENG_JSON }}
+          HUB_CONFIG_FINLOOP: ${{ secrets.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON }}
           HUB_P12_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           HUB_P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           HUB_NOTARY_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
           HUB_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           HUB_NOTARY_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           HUB_APPLE_TEAM_ID: 87WNRG9285
-        run: node desktop/scripts/release-macos-ci.mjs
+        run: |
+          if [ "$HUB_ENTERPRISE_KEY" = seng ]; then
+            export HUB_ENTERPRISE_CONFIG_JSON="$HUB_CONFIG_SENG"
+          else
+            export HUB_ENTERPRISE_CONFIG_JSON="$HUB_CONFIG_FINLOOP"
+          fi
+          test -n "$HUB_ENTERPRISE_CONFIG_JSON"
+          node desktop/scripts/release-macos-ci.mjs
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri
       - name: Upload only verified installer and release receipt
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Hub-macos-${{ inputs.source_sha }}-${{ github.run_attempt }}
+          name: Hub-${{ matrix.enterprise }}-macos-${{ inputs.source_sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
@@ -105,6 +125,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     environment: windows-release
+    strategy:
+      fail-fast: false
+      matrix:
+        enterprise: ${{ fromJSON(inputs.enterprise == 'both' && '["seng","finloop"]' || format('["{0}"]', inputs.enterprise)) }}
     defaults:
       run:
         working-directory: hub
@@ -159,13 +183,30 @@ jobs:
           CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
           ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
         run: node scripts/hub-windows-sign.mjs --preflight
-      - run: npm ci && npm run check && npm run prepare:tools && npm run prepare:sidecar && npx tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
+      - name: Build fixed single-enterprise portable client
+        env:
+          HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CONFIG_SENG: ${{ secrets.HUB_ENTERPRISE_CONFIG_SENG_JSON }}
+          HUB_CONFIG_FINLOOP: ${{ secrets.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON }}
+        run: |
+          if [ "$HUB_ENTERPRISE_KEY" = seng ]; then
+            export HUB_ENTERPRISE_CONFIG_JSON="$HUB_CONFIG_SENG"
+          else
+            export HUB_ENTERPRISE_CONFIG_JSON="$HUB_CONFIG_FINLOOP"
+          fi
+          test -n "$HUB_ENTERPRISE_CONFIG_JSON"
+          npm ci
+          npm run check
+          npm run prepare:tools
+          npm run prepare:sidecar
+          npx tauri build --no-bundle --config "src-tauri/tauri.${HUB_ENTERPRISE_KEY}.conf.json"
         working-directory: hub/desktop
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri
       - name: Sign portable executables and create ZIP
         working-directory: .
         env:
+          HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
           ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
           CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
@@ -174,12 +215,14 @@ jobs:
       - name: Verify portable files and produce download receipt
         working-directory: .
         shell: pwsh
+        env:
+          HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
         run: ./scripts/verify-hub-windows-portable.ps1
       - name: Upload verified signed Windows portable ZIP
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Hub-windows-signed-${{ inputs.source_sha }}-${{ github.run_attempt }}
+          name: Hub-${{ matrix.enterprise }}-windows-signed-${{ inputs.source_sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: error
           path: |
