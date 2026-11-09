@@ -1,8 +1,12 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$products = @{ seng = 'AI研发流程助手'; finloop = '项目管理' }
-$productName = $products[$env:HUB_ENTERPRISE_KEY]
-if (!$productName) { throw 'HUB_ENTERPRISE_KEY must be seng or finloop.' }
+$enterprise = $env:HUB_ENTERPRISE_KEY
+$edition = $env:HUB_CLIENT_EDITION
+if ($enterprise -notin @('seng', 'finloop')) { throw 'Invalid enterprise.' }
+if ($edition -notin @('product', 'development')) { throw 'Invalid edition.' }
+$overlay = Get-Content (Join-Path $root "hub/desktop/src-tauri/tauri.$enterprise.$edition.conf.json") | ConvertFrom-Json
+$productName = $overlay.productName
+if (!$productName -or $overlay.identifier -ne "com.sengclaw.hub.$enterprise.$edition") { throw 'Edition overlay mismatch.' }
 $archives = @(Get-ChildItem (Join-Path $root 'hub/.runtime/releases/windows-portable') -Filter '*-windows-x64-portable.zip')
 if ($archives.Count -ne 1) { throw 'Expected exactly one portable Windows ZIP.' }
 
@@ -44,7 +48,11 @@ if (($lark -join ' ') -notmatch [regex]::Escape($toolchain.'lark-cli'.version)) 
 
 $receipt = [ordered]@{
     version = (Get-Content (Join-Path $root 'hub/desktop/package.json') | ConvertFrom-Json).version
-    enterprise = $env:HUB_ENTERPRISE_KEY
+    enterprise = $enterprise
+    edition = $edition
+    bundle_id = $overlay.identifier
+    platform = 'windows'
+    architecture = 'x64'
     product_name = $productName
     source_sha = (git -C (Join-Path $root 'hub') rev-parse HEAD)
     package = $archives[0].Name

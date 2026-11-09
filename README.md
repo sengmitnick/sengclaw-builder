@@ -19,14 +19,14 @@ Hub 云端服务镜像继续由私有 `sengclaw-hub` 的 `publish-hub.yml` 构�
 
 ```sh
 gh workflow run hub-desktop.yml --repo sengmitnick/sengclaw-builder \
-  -f source_sha=<Hub完整提交SHA> -f enterprise=seng -f platform=macos -f upload_installers=false
+  -f source_sha=<Hub完整提交SHA> -f enterprise=finloop -f edition=both -f platform=both -f upload_installers=true
 ```
 
-`enterprise` 可选 `seng`、`finloop`、`both`；每个值生成名称、Bundle ID、数据目录和云端地址固定的单企业客户端。`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名免安装 ZIP，不生成 NSIS/MSI。成功构建不等于客户实机交互验收。确认允许公开下载客户端包后再将 `upload_installers` 设为 `true`。
+`edition` 可选 `product`、`development`、`both`（默认两版），每个岗位使用独立任务，编译、签名和回执核对都绑定同一岗位。`enterprise` 可选 `seng`、`finloop`、`both`；每个值生成名称、Bundle ID、数据目录和云端地址固定的单企业客户端。`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名免安装 ZIP，不生成 NSIS/MSI。成功构建不等于客户实机交互验收。确认允许公开下载客户端包后再将 `upload_installers` 设为 `true`。
 
 Windows 使用独立的 `windows-release` Environment，配置 `ES_USERNAME`、`ES_PASSWORD`、`CREDENTIAL_ID`、`ES_TOTP_SECRET` 四项 Secrets（不是 Variables）。建议限制 main 分支并设置发布审批；不要发送或提交秘密。构建通过固定 SHA 的 SSL.com 官方适配器，在 Tauri 打包过程中签署主程序、sidecar、卸载程序及安装包，并验证有效时间戳。签名错误不会回退到未签名包。公开日志不输出适配器原始命令或结果。
 
-上传前，在 Windows runner 的全新含空格目录解压 ZIP，核对主程序、sidecar、飞书项目 CLI 和飞书 CLI 的签名及签名者一致性，运行 sidecar `--help` 与两个 CLI 的版本检查，生成 `hub-windows-receipt.json`（含 SHA256）。只上传免安装 ZIP 和该回执，保留 7 天，不创建公开 Release。此检查不替代客户电脑的 GUI、权限和登录验收；签名也不保证消除 SmartScreen 提醒。
+上传前，在 Windows runner 的全新含空格目录解压 ZIP，核对主程序、sidecar、飞书项目 CLI 和飞书 CLI 的签名及签名者一致性，运行 sidecar `--help` 与两个 CLI 的版本检查，生成 `hub-windows-receipt.json`（含 SHA256）。只上传免安装 ZIP 和该回执，保留 7 天，工作流本身不创建公开 Release。用户明确授权发布时，须等所需四项构建全部成功、核对同一源码 SHA 和四份签名回执，再单独发布不可覆盖的 `work-assistant-v<version>-<enterprise>` Release；不得混入其他应用的发行标签。此检查不替代客户电脑的 GUI、权限和登录验收；签名也不保证消除 SmartScreen 提醒。
 
 ## 仓库边界
 

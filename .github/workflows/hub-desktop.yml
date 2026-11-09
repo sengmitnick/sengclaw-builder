@@ -1,5 +1,5 @@
 name: Hub Desktop
-run-name: Hub ${{ inputs.enterprise }} · ${{ inputs.platform }} · ${{ inputs.source_sha }}
+run-name: Hub ${{ inputs.enterprise }} · ${{ inputs.edition }} · ${{ inputs.platform }} · ${{ inputs.source_sha }}
 
 on:
   workflow_dispatch:
@@ -20,6 +20,12 @@ on:
         type: choice
         default: seng
         options: [seng, finloop, both]
+      edition:
+        description: Fixed employee role
+        required: true
+        type: choice
+        default: both
+        options: [product, development, both]
       upload_installers:
         description: Allow signed package downloads from this PUBLIC repository (no Release)
         required: true
@@ -43,6 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         enterprise: ${{ fromJSON(inputs.enterprise == 'both' && '["seng","finloop"]' || format('["{0}"]', inputs.enterprise)) }}
+        edition: ${{ fromJSON(inputs.edition == 'both' && '["product","development"]' || format('["{0}"]', inputs.edition)) }}
     defaults:
       run:
         working-directory: hub
@@ -90,6 +97,7 @@ jobs:
       - name: Sign and notarize using Builder's existing Apple credentials
         env:
           HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CLIENT_EDITION: ${{ matrix.edition }}
           HUB_CONFIG_SENG: ${{ secrets.HUB_ENTERPRISE_CONFIG_SENG_JSON }}
           HUB_CONFIG_FINLOOP: ${{ secrets.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON }}
           HUB_P12_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
@@ -112,7 +120,7 @@ jobs:
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Hub-${{ matrix.enterprise }}-macos-${{ inputs.source_sha }}-${{ github.run_attempt }}
+          name: Hub-${{ matrix.enterprise }}-${{ matrix.edition }}-macos-${{ inputs.source_sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
@@ -129,6 +137,7 @@ jobs:
       fail-fast: false
       matrix:
         enterprise: ${{ fromJSON(inputs.enterprise == 'both' && '["seng","finloop"]' || format('["{0}"]', inputs.enterprise)) }}
+        edition: ${{ fromJSON(inputs.edition == 'both' && '["product","development"]' || format('["{0}"]', inputs.edition)) }}
     defaults:
       run:
         working-directory: hub
@@ -186,6 +195,7 @@ jobs:
       - name: Build fixed single-enterprise portable client
         env:
           HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CLIENT_EDITION: ${{ matrix.edition }}
           HUB_CONFIG_SENG: ${{ secrets.HUB_ENTERPRISE_CONFIG_SENG_JSON }}
           HUB_CONFIG_FINLOOP: ${{ secrets.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON }}
         run: |
@@ -197,9 +207,7 @@ jobs:
           test -n "$HUB_ENTERPRISE_CONFIG_JSON"
           npm ci
           npm run check
-          npm run prepare:tools
-          npm run prepare:sidecar
-          npx tauri build --no-bundle --config "src-tauri/tauri.${HUB_ENTERPRISE_KEY}.conf.json"
+          npm run build
         working-directory: hub/desktop
       - run: cargo test --locked
         working-directory: hub/desktop/src-tauri
@@ -207,6 +215,7 @@ jobs:
         working-directory: .
         env:
           HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CLIENT_EDITION: ${{ matrix.edition }}
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
           ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
           CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
@@ -217,12 +226,13 @@ jobs:
         shell: pwsh
         env:
           HUB_ENTERPRISE_KEY: ${{ matrix.enterprise }}
+          HUB_CLIENT_EDITION: ${{ matrix.edition }}
         run: ./scripts/verify-hub-windows-portable.ps1
       - name: Upload verified signed Windows portable ZIP
         if: success() && inputs.upload_installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Hub-${{ matrix.enterprise }}-windows-signed-${{ inputs.source_sha }}-${{ github.run_attempt }}
+          name: Hub-${{ matrix.enterprise }}-${{ matrix.edition }}-windows-signed-${{ inputs.source_sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: error
           path: |

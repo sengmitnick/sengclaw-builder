@@ -29,15 +29,12 @@ test('Windows signs through a pinned adapter with isolated release secrets', () 
     assert.match(windows, new RegExp(`secrets\\.${key}`));
   }
   assert.match(windows, /ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747/);
-  assert.match(windows, /tauri build --no-bundle/);
-  assert.match(windows, /npm run prepare:tools/);
-  assert.ok(windows.indexOf('npm run prepare:tools') < windows.indexOf('npm run prepare:sidecar'));
-  assert.ok(windows.indexOf('npm run prepare:sidecar') < windows.indexOf('tauri build --no-bundle'));
+  assert.match(windows, /npm run build/);
   assert.match(windows, /hub-windows-release.mjs/);
   assert.match(windows, /verify-hub-windows-portable.ps1/);
   assert.match(windows, /windows-portable\/\*\.zip/);
   assert.doesNotMatch(windows, /nsis|msi/i);
-  assert.match(windows, /Hub-\$\{\{ matrix\.enterprise \}\}-windows-signed-/);
+  assert.match(windows, /Hub-\$\{\{ matrix\.enterprise \}\}-\$\{\{ matrix\.edition \}\}-windows-signed-/);
   assert.doesNotMatch(windows, /continue-on-error|unsigned|@develop/);
   assert.ok(windows.indexOf('verify-hub-windows-portable.ps1') < windows.indexOf('actions/upload-artifact'));
 });
@@ -56,8 +53,8 @@ test('Portable executables are signed before ZIP creation and fail closed', () =
   assert.match(sign, /TimeStamperCertificate/);
   assert.doesNotMatch(sign, /console\.(log|error)\(result|stdio: 'inherit'/);
   assert.match(verify, /Expand-Archive/);
-  assert.match(verify, /AI研发流程助手/);
-  assert.match(verify, /项目管理/);
+  assert.match(verify, /tauri\.\$enterprise\.\$edition\.conf\.json/);
+  assert.match(verify, /\$overlay\.productName/);
   assert.match(verify, /package_type = 'portable-zip'/);
   assert.match(verify, /Signer mismatch/);
   assert.match(verify, /customer_machine_ui_acceptance = 'not yet verified'/);
@@ -66,9 +63,21 @@ test('Each enterprise build receives only its fixed package key and selected sec
   assert.equal((workflow.match(/HUB_ENTERPRISE_KEY: \$\{\{ matrix\.enterprise \}\}/g) || []).length, 4);
   assert.match(workflow, /secrets\.HUB_ENTERPRISE_CONFIG_SENG_JSON/);
   assert.match(workflow, /secrets\.HUB_ENTERPRISE_CONFIG_FINLOOP_JSON/);
-  assert.match(workflow, /tauri\.\$\{HUB_ENTERPRISE_KEY\}\.conf\.json/);
-  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-macos-/);
-  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-windows-signed-/);
+  assert.match(workflow, /npm run build/);
+  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-\$\{\{ matrix\.edition \}\}-macos-/);
+  assert.match(workflow, /Hub-\$\{\{ matrix\.enterprise \}\}-\$\{\{ matrix\.edition \}\}-windows-signed-/);
+});
+
+test('both platforms isolate each edition through compilation, signing and receipt verification', () => {
+  assert.match(workflow, /edition:[\s\S]*?options: \[product, development, both\]/);
+  assert.equal((workflow.match(/edition: \$\{\{ fromJSON/g) || []).length, 2);
+  assert.equal((workflow.match(/HUB_CLIENT_EDITION: \$\{\{ matrix\.edition \}\}/g) || []).length, 4);
+  const windows = workflow.split('  windows:')[1];
+  assert.match(windows, /npm run build/);
+  assert.doesNotMatch(windows, /npx tauri build/);
+  const verify = readFileSync(new URL('../scripts/verify-hub-windows-portable.ps1', import.meta.url), 'utf8');
+  assert.match(verify, /edition = \$edition/);
+  assert.match(verify, /bundle_id = \$overlay\.identifier/);
 });
 test('Mac reuses existing Builder environment; Windows receives no Apple keys', () => {
   assert.match(workflow, /environment: macos-release/);
