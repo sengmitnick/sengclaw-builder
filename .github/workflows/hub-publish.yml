@@ -1,0 +1,59 @@
+name: Publish verified Hub release
+run-name: Publish Hub ${{ inputs.enterprise }} ${{ inputs.version }} from ${{ inputs.build_run_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful four-package Hub Desktop run ID
+        required: true
+        type: string
+      source_sha:
+        description: Full private Hub source SHA used by that build
+        required: true
+        type: string
+      version:
+        description: Release version matching all four signing receipts
+        required: true
+        type: string
+      enterprise:
+        description: Enterprise bound to all four packages
+        required: true
+        type: choice
+        options: [finloop, seng]
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: hub-publish-${{ inputs.enterprise }}-${{ inputs.version }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'sengmitnick/sengclaw-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      VERSION: ${{ inputs.version }}
+      ENTERPRISE: ${{ inputs.enterprise }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Verify publisher tests and bounded input
+        run: |
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          python -m unittest discover -s tests -p 'test_hub_release.py' -v
+      - name: Read trusted build and download immutable signed artifacts
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN_ID" > build-run.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN_ID/jobs" > build-jobs.json
+          gh run download "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern "Hub-$ENTERPRISE-*-$SOURCE_SHA-*" --dir artifacts
+      - name: Verify all four receipts and hashes before publishing the existing draft
+        run: python scripts/hub-publish-release.py

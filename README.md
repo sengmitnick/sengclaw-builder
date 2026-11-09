@@ -103,3 +103,13 @@ gh workflow run replybot-macos.yml \
 ```
 
 工作流会执行源码测试、PostgreSQL 集成测试、arm64 打包、Developer ID 签名、Apple 公证、Gatekeeper/stapler 校验和 SHA-256 生成。DMG 挂载后还会兼容 pnpm hoisted/isolated 布局检查 external 运行时依赖、使用打包后的 Electron 二进制真实加载四个 external 模块、检查解包后的 arm64 原生模块，并实际启动应用等待 renderer 进程出现；出现悬空链接、`Cannot find module`、未捕获 JavaScript 异常或只有错误弹窗而没有应用窗口时构建失败。`stapler validate` 会对 Apple CloudKit 的瞬时网络失败做有限重试，但重试耗尽后仍会关闭失败。全部验证通过后，工作流按桌面端 `package.json` 版本创建不可覆盖的 `v<version>` Release，并发布固定名 `ReplyBot-macOS-arm64.dmg` 及校验文件；如同版本 Release 已存在，任务会提前失败而不是覆盖历史产物。
+
+### 发布已验证的 Hub 签名包
+
+`hub-publish.yml` 是独立的手动发布入口，仅操作用户预先创建的 draft Release。它从指定成功的 `hub-desktop.yml` 运行读取四个不可变 Artifact，核对企业、岗位、源码、签名回执和摘要，再从 GitHub Runner 上传，避免本机大文件出网超时。只有服务器十个文件摘要全部一致才公开草稿；已经发布的版本拒绝覆盖。发布任务不读取源码 Deploy Key 或任何签名 Secrets，也不重新构建安装包。
+
+```sh
+gh workflow run hub-publish.yml --repo sengmitnick/sengclaw-builder \
+  -f build_run_id=<成功构建ID> -f source_sha=<完整Hub提交SHA> \
+  -f version=<版本号> -f enterprise=finloop
+```
