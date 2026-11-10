@@ -8,6 +8,14 @@ on:
         description: Full 40-character commit SHA on private Hub main
         required: true
         type: string
+      skill_package_asset_id:
+        description: Numeric release asset ID of the locked offline role-package ZIP in this Builder repository
+        required: true
+        type: string
+      skill_package_sha256:
+        description: SHA256 of the exact offline role-package ZIP
+        required: true
+        type: string
       platform:
         description: Desktop platform
         required: true
@@ -87,6 +95,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
+      - name: Stage and verify locked offline role Skill input
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SKILL_PACKAGE_ASSET_ID: ${{ inputs.skill_package_asset_id }}
+          SKILL_PACKAGE_SHA256: ${{ inputs.skill_package_sha256 }}
+          SKILL_EDITION: ${{ matrix.edition }}
+        run: node scripts/hub-stage-skills.mjs
       - run: pip install uv==0.12.9
       - run: uv sync --locked --group desktop --python 3.12.14
       - run: uv run --locked ruff check workflow tests scripts
@@ -175,6 +191,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
+      - name: Stage and verify locked offline role Skill input
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SKILL_PACKAGE_ASSET_ID: ${{ inputs.skill_package_asset_id }}
+          SKILL_PACKAGE_SHA256: ${{ inputs.skill_package_sha256 }}
+          SKILL_EDITION: ${{ matrix.edition }}
+        run: node scripts/hub-stage-skills.mjs
       - run: pip install uv==0.12.9
       - run: uv sync --locked --group desktop --python 3.12.14
       - name: Check out pinned SSL.com signing adapter

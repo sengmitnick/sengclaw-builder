@@ -19,8 +19,15 @@ Hub 云端服务镜像继续由私有 `sengclaw-hub` 的 `publish-hub.yml` 构�
 
 ```sh
 gh workflow run hub-desktop.yml --repo sengmitnick/sengclaw-builder \
-  -f source_sha=<Hub完整提交SHA> -f enterprise=finloop -f edition=both -f platform=both -f upload_installers=true
+  -f source_sha=<Hub完整提交SHA> \
+  -f skill_package_asset_id=<本仓库草稿Release中的离线岗位包资产ID> \
+  -f skill_package_sha256=<该ZIP的SHA256> \
+  -f enterprise=finloop -f edition=both -f platform=both -f upload_installers=true
 ```
+
+内置岗位 Skill 使用本次发布锁定的离线输入：维护者从唯一 Skills 源码生成 `product/`、`development/` 两个自包含成品，将二者打入一个保留 Unix 执行权限的 ZIP，暂存为本 Builder 草稿 Release 的资产。输入只接受本仓库的数字资产 ID 与固定 SHA256，不接受任意下载 URL或额外私库凭据。Runner 用本仓库只读 `GITHUB_TOKEN` 下载，核对 ZIP 摘要、安全解压，并按不可变 Hub 源码中的 `desktop/skills.lock.json` 验证两个岗位的全部文件；每个岗位构建只嵌入自身成品。缺失、篡改、越界路径、符号链接或执行权限错误均拒绝构建，不退回个人 Codex 插件缓存。
+
+临时岗位包输入不作为正式客户端下载资产。四包构建成功后，维护者应在公开发布草稿前移除该临时输入资产，再由既有 `hub-publish.yml` 校验并上传十个正式发行文件。本流程只为手动签名构建提供固定输入，不配置公司 GitLab、客户端版本检测或远程自动更新。
 
 `edition` 可选 `product`、`development`、`both`（默认两版），每个岗位使用独立任务，编译、签名和回执核对都绑定同一岗位。`enterprise` 可选 `seng`、`finloop`、`both`；每个值生成名称、Bundle ID、数据目录和云端地址固定的单企业客户端。`platform` 可选 `macos`、`windows`、`both`。Mac 为 arm64 正式签名公证包；Windows 为 x64 SSL.com Authenticode 签名免安装 ZIP，不生成 NSIS/MSI。成功构建不等于客户实机交互验收。确认允许公开下载客户端包后再将 `upload_installers` 设为 `true`。
 
