@@ -107,3 +107,25 @@ test('workflow stages the locked input before signing on each platform', () => {
   assert.equal((workflow.match(/GITHUB_TOKEN: \$\{\{ github.token \}\}/g) || []).length, 2);
   assert.doesNotMatch(workflow, /secrets\.(?:SKILLS_DEPLOY_KEY|GITHUB_PAT)/);
 });
+
+test('draft input access is granted only to the two trusted manual signing jobs', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/hub-desktop.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /^permissions:\n  contents: read$/m);
+  assert.equal((workflow.match(/^    permissions:\n      contents: write$/gm) || []).length, 2);
+  for (const name of ['macos', 'windows']) {
+    const section = workflow.split(`\n  ${name}:\n`)[1].split(/\n  [a-z][a-z0-9_-]*:\n/)[0];
+    assert.match(section, /github\.repository == 'sengmitnick\/sengclaw-builder'/);
+    assert.match(section, /github\.ref == 'refs\/heads\/main'/);
+    assert.match(section, /^    permissions:\n      contents: write$/m);
+  }
+  assert.doesNotMatch(workflow, /pull_request:|workflow_call:|^  push:/m);
+});
+
+test('asset failures report only the safe HTTP status without response contents or headers', async () => {
+  const {downloadSkillAsset} = await implementation();
+  for (const status of [403, 404]) {
+    await assert.rejects(downloadSkillAsset(input, async () => new Response(`secret-body ${input.token}`, {
+      status, headers: {location: 'https://release-assets.githubusercontent.com/private?signature=secret'},
+    })), error => error.message === `Skill asset is unavailable (HTTP ${status}).`);
+  }
+});

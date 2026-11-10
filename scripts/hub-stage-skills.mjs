@@ -32,7 +32,7 @@ export async function downloadSkillAsset({assetId, expectedSha, token}, fetcher 
     if (error instanceof SkillInputError) throw error;
     throw new SkillInputError('Skill asset download failed.');
   }
-  if (response.status !== 200) throw new SkillInputError('Skill asset is unavailable.');
+  if (response.status !== 200) throw new SkillInputError(`Skill asset is unavailable (HTTP ${response.status}).`);
   let bytes;
   try { bytes = Buffer.from(await response.arrayBuffer()); }
   catch { throw new SkillInputError('Skill asset download failed.'); }

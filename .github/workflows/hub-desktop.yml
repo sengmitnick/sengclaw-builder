@@ -49,6 +49,9 @@ concurrency:
 
 jobs:
   macos:
+    # Draft release inputs require push access; these jobs never publish releases.
+    permissions:
+      contents: write
     if: github.repository == 'sengmitnick/sengclaw-builder' && github.ref == 'refs/heads/main' && (inputs.platform == 'macos' || inputs.platform == 'both')
     runs-on: macos-15
     timeout-minutes: 75
@@ -145,6 +148,9 @@ jobs:
             hub/.runtime/releases/*/release.json
 
   windows:
+    # Draft release inputs require push access; these jobs never publish releases.
+    permissions:
+      contents: write
     if: github.repository == 'sengmitnick/sengclaw-builder' && github.ref == 'refs/heads/main' && (inputs.platform == 'windows' || inputs.platform == 'both')
     runs-on: windows-2022
     timeout-minutes: 60

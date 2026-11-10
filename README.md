@@ -25,7 +25,9 @@ gh workflow run hub-desktop.yml --repo sengmitnick/sengclaw-builder \
   -f enterprise=finloop -f edition=both -f platform=both -f upload_installers=true
 ```
 
-内置岗位 Skill 使用本次发布锁定的离线输入：维护者从唯一 Skills 源码生成 `product/`、`development/` 两个自包含成品，将二者打入一个保留 Unix 执行权限的 ZIP，暂存为本 Builder 草稿 Release 的资产。输入只接受本仓库的数字资产 ID 与固定 SHA256，不接受任意下载 URL或额外私库凭据。Runner 用本仓库只读 `GITHUB_TOKEN` 下载，核对 ZIP 摘要、安全解压，并按不可变 Hub 源码中的 `desktop/skills.lock.json` 验证两个岗位的全部文件；每个岗位构建只嵌入自身成品。缺失、篡改、越界路径、符号链接或执行权限错误均拒绝构建，不退回个人 Codex 插件缓存。
+内置岗位 Skill 使用本次发布锁定的离线输入：维护者从唯一 Skills 源码生成 `product/`、`development/` 两个自包含成品，将二者打入一个保留 Unix 执行权限的 ZIP，暂存为本 Builder 草稿 Release 的资产。输入只接受本仓库的数字资产 ID 与固定 SHA256，不接受任意下载 URL或额外私库凭据。工作流默认仍为 `contents: read`；仅受 main 分支和手动触发约束的两个签名 job 使用本仓库 `GITHUB_TOKEN` 的 `contents: write`，以获得草稿 Release 输入的可见性。下载脚本只执行读取，不创建、修改或发布 Release；它下载后，核对 ZIP 摘要、安全解压，并按不可变 Hub 源码中的 `desktop/skills.lock.json` 验证两个岗位的全部文件；每个岗位构建只嵌入自身成品。缺失、篡改、越界路径、符号链接或执行权限错误均拒绝构建，不退回个人 Codex 插件缓存。
+
+GitHub [Release API 说明](https://docs.github.com/en/rest/releases/releases#list-releases)要求具备 push access 才能看到草稿；[资产读取端点](https://docs.github.com/en/rest/releases/assets#get-a-release-asset)的一般读取权限不替代草稿可见性。权限仅覆盖当前 Builder 仓库，不增加新凭据，不扩展其他工作流。
 
 临时岗位包输入不作为正式客户端下载资产。四包构建成功后，维护者应在公开发布草稿前移除该临时输入资产，再由既有 `hub-publish.yml` 校验并上传十个正式发行文件。本流程只为手动签名构建提供固定输入，不配置公司 GitLab、客户端版本检测或远程自动更新。
 
