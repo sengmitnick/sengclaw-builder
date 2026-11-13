@@ -30,12 +30,14 @@ test('Windows signs through a pinned adapter with isolated release secrets', () 
   }
   assert.match(windows, /ref: b7f8ff36fc0de8690fbbab8e5b4421d29802f747/);
   assert.match(windows, /npm run build/);
+  assert.match(windows, /Verify Windows CLI UTF-8 boundary[\s\S]*python -m unittest tests\.test_environments -v/);
   assert.match(windows, /hub-windows-release.mjs/);
   assert.match(windows, /verify-hub-windows-portable.ps1/);
   assert.match(windows, /windows-portable\/\*\.zip/);
   assert.doesNotMatch(windows, /nsis|msi/i);
   assert.match(windows, /Hub-\$\{\{ matrix\.enterprise \}\}-\$\{\{ matrix\.edition \}\}-windows-signed-/);
   assert.doesNotMatch(windows, /continue-on-error|unsigned|@develop/);
+  assert.ok(windows.indexOf('tests.test_environments') < windows.indexOf('hub-windows-sign.mjs --preflight'));
   assert.ok(windows.indexOf('verify-hub-windows-portable.ps1') < windows.indexOf('actions/upload-artifact'));
 });
 test('Portable executables are signed before ZIP creation and fail closed', () => {

@@ -207,6 +207,8 @@ jobs:
         run: node scripts/hub-stage-skills.mjs
       - run: pip install uv==0.12.9
       - run: uv sync --locked --group desktop --python 3.12.14
+      - name: Verify Windows CLI UTF-8 boundary
+        run: uv run --locked python -m unittest tests.test_environments -v
       - name: Check out pinned SSL.com signing adapter
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
